@@ -8,6 +8,9 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 
+import json
+import boto3
+from botocore.config import Config
 
 def build_parser() -> argparse.ArgumentParser:
     """Day02のCLI引数を定義します（READMEの機能要件に対応）。"""
@@ -57,8 +60,26 @@ def invoke_bedrock(
     - 認証/権限/ネットワーク/タイムアウトなどは例外として投げてOK
      （main側で終了コード=1にしてstderrへ出ます）
     """
-    # TODO(TRAINEE): Implement Bedrock invocation and return the assistant text only.
-    raise NotImplementedError("Implement Bedrock invocation")
+    config = Config(read_timeout=timeout_sec)
+    client = boto3.client("bedrock-runtime", region_name=region, config=config)
+
+    request_body = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = client.invoke_model(
+        modelId=model_id,
+        body=json.dumps(request_body)
+    )
+
+    response_body = json.loads(response.get("body").read())
+    return response_body["content"][0]["text"]
+
 
 
 def main(argv: List[str] | None = None) -> int:
