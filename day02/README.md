@@ -133,14 +133,14 @@ python -m day02.app --prompt "短い俳句を作ってください" --temperatur
 
 ## Bedrock確認
 
-- モデル：
-- リージョン：
-- 主要パラメータ：
+- モデル：`global.anthropic.claude-haiku-4-5-20251001-v1:0`
+- リージョン：`us-east-2`
+- 主要パラメータ：`temperature=0.2`, `max-tokens=512`, `timeout-sec=30`
 
 ## リサーチメモ（任意）
 
 調べたURLや、理解した要点をメモしてください。
 
-- Bedrockのモデル呼び出し方法（boto3等）
-- 利用する認証方式（研修の指示に従う）
-- タイムアウト/リトライの考え方
+- 当初デフォルトのモデルIDを使用したが、`ResourceNotFoundException (This model version has reached the end of its life.)` のエラーが発生した。
+- モデルのサポート終了が原因と切り分けできたため、利用可能なモデル（`global.anthropic.claude-haiku-4-5-20251001-v1:0`）と対応リージョン（`us-east-2`）に変更し、正常な動作を確認した。
+- 環境変数や引数でモデルIDやリージョンを外部から変更できるようにしておく実装要件の意図（変化への強さ）が、今回のエラー対応を通じて非常に腹落ちした。
