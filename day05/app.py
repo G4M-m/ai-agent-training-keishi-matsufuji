@@ -20,24 +20,71 @@ def _validate_args(args: argparse.Namespace) -> None:
 
 
 def answer_with_rag(question: str) -> str:
-    """RAGで質問に回答し、指定フォーマットのテキストを返します。
+    """RAGで質問に回答し、指定フォーマットのテキストを返します。"""
+    import os
+    import glob
+    from langchain_aws import ChatBedrock
+    from langchain_core.messages import HumanMessage, SystemMessage
 
-    この関数を実装すると、`python -m day05.app --question ...` が動くようになります。
+    # ① Retrieval（検索）：指定フォルダからテキストデータを読み込む
+    data_dir = "day05/data"
+    hit_contents = []
+    hit_sources = []
 
-    要件（READMEの出力フォーマット）：
-    - 標準出力に次の形で出すための文字列を返す
-      1) `Answer:` 行
-      2) `Sources:` 行
-      3) `- <URL or ファイル名> (excerpt: "...")` を最低1件（ヒットなしなら `- (none)`）
+    if os.path.exists(data_dir):
+        # フォルダ内の .txt ファイルをすべて読み込む
+        for filepath in glob.glob(f"{data_dir}/*.txt"):
+            with open(filepath, "r", encoding="utf-8") as f:
+                text = f.read()
+                # 今回は簡易的なRAGのため、テキストが存在すれば検索ヒットとみなす
+                if text.strip():
+                    hit_contents.append(text)
+                    hit_sources.append(filepath)
 
-    実装ガイド：
-    - `day05/data/` 配下の `.txt` を読み込み、検索対象とする
-    - 最初は単純なキーワード検索でもOK（高品質でなくてよい）
-    - ヒットがない場合の挙動を必ず実装する
-    """
-    # TODO(TRAINEE): Implement retrieval from day05/data and return Answer/Sources formatted text.
-    raise NotImplementedError("Implement RAG")
+    # そもそも読み込むファイルが無い場合（または中身が空の場合）のフェイルセーフ
+    if not hit_contents:
+        return "Answer: 該当する根拠が見つかりません。\nSources:\n- (none)"
 
+    # ② Augmented（プロンプトへの注入）：システムプロンプトに【参考資料】として埋め込む
+    context_text = "\n---\n".join(hit_contents)
+    
+    # AIの知識を封じ込め、資料のみを使わせるための絶対ルール
+    system_prompt = (
+        "あなたは社内規定を案内するアシスタントです。"
+        "以下の【参考資料】の情報のみを使って、ユーザーの質問に簡潔に答えてください。"
+        "参考資料に答えが載っていない質問の場合は、絶対に推測せず、"
+        "必ず「該当する根拠が見つかりません。」という一文のみを出力してください。\n\n"
+        f"【参考資料】\n{context_text}"
+    )
+
+    # ③ Generation（生成）：AIに回答を作成させる
+    region = os.getenv("AWS_REGION", "us-east-2")
+    model_id = os.getenv("BEDROCK_MODEL_ID", "global.anthropic.claude-haiku-4-5-20251001-v1:0")
+
+    llm = ChatBedrock(
+        model_id=model_id,
+        region_name=region,
+        model_kwargs={"temperature": 0.0}
+    )
+
+    messages = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=question)
+    ]
+
+    ai_msg = llm.invoke(messages)
+    answer_text = str(ai_msg.content)
+
+    # ④ 出力フォーマットの成形と、AIが「資料にない」と判断した場合の統制（コントロール）
+    if "該当する根拠が見つかりません" in answer_text:
+        # AIがギブアップした場合、仕様通りに Sources を (none) にする
+        return "Answer: 該当する根拠が見つかりません。\nSources:\n- (none)"
+
+    # 正常に回答できた場合、Python側で確実に証跡（ファイル名）を付与する
+    sources_str = "\n".join([f"- {src} (excerpt: 参考資料より抽出)" for src in hit_sources])
+    final_output = f"Answer: {answer_text}\nSources:\n{sources_str}"
+
+    return final_output
 
 def main(argv: List[str] | None = None) -> int:
     """CLIのエントリポイントです。
