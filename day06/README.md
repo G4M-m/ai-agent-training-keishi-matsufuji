@@ -1,5 +1,5 @@
 # Day 06
-
+ 
 ## 受講者が実装する場所
 
 - `day06/app.py` の `run_guarded()`
