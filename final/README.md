@@ -132,10 +132,10 @@ streamlit run final/chat_ui.py
 
 最低限、以下の観点でセルフ評価を行ってください。
 
-- 正常系：想定質問で回答 + 根拠 + JSONが出る
-- 異常系：検索ヒットなし、ツール失敗、JSON破損などで安全に復帰/失敗できる
-- 根拠：出典が常に含まれる
-- 再現性：READMEの手順で第三者が動かせる
+- [x] 正常系：想定質問で回答 + 根拠 + JSONが出る（`--text "〇〇について調査して"` 等で確認済み）
+- [x] 異常系：検索ヒットなし、ツール失敗、JSON破損などで安全に復帰/失敗できる（検索0件・空入力・禁止ワード入力時に `fallback` ノードへ安全に遷移することを確認済み）
+- [x] 根拠：出典が常に含まれる（回答本文および構造化出力 `citations` にタイトル・URL・抜粋・ライセンスを出力）
+- [x] 再現性：READMEの手順で第三者が動かせる（CLIおよびStreamlit UIの双方で動作確認済み）
 
 評価の記録は `docs/` に残します。
 
@@ -143,9 +143,14 @@ streamlit run final/chat_ui.py
 
 利用した公開データについて、以下を記載してください。
 
-- データ名
-- URL
-- ライセンス
+1. **デジタル庁 政府相互運用性フレームワーク（GIF）**
+   - データ名：政府相互運用性フレームワーク（GIF）公開ドキュメント
+   - URL：https://www.digital.go.jp/policies/data_strategy/gif
+   - ライセンス：CC BY 4.0（公共データ利用規約 第1.0版）
+2. **デジタル庁 ガバメントクラウド利用指針**
+   - データ名：ガバメントクラウド利用指針・公開資料
+   - URL：https://www.digital.go.jp/policies/gov_cloud
+   - ライセンス：CC BY 4.0（公共データ利用規約 第1.0版）
 
 ---
 
@@ -153,7 +158,7 @@ streamlit run final/chat_ui.py
 
 - `final/`：アプリ本体、`final/README.md`
 - `docs/`：
-  - 状態遷移図
-  - 主要プロンプト
-  - 失敗パターンと対策
-  - 評価結果と改善ログ
+  - 状態遷移図（`docs/state-diagram.md`）
+  - 主要プロンプト（`docs/prompts.md`）
+  - 失敗パターンと対策（`docs/failure-patterns.md`）
+  - 評価結果と改善ログ（`docs/evaluation.md`）
